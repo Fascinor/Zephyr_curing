@@ -1,0 +1,51 @@
+/ {
+    aliases {
+        spot-out = &spot_out;
+        strap-out = &strap_out;
+        motor-out = &motor_out;
+
+        up-button = &up_button;
+        down-button = &down_button;
+        ok-button = &ok_button;
+
+        status-led = &status_led;
+    };
+
+    outputs {
+        compatible = "gpio-leds";
+
+        spot_out: spot_out {
+            gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
+            label = "spot IO";
+        };
+
+        strap_out: strap_out {
+            gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
+            label = "strap IO";
+        };
+
+        motor_out: motor_out {
+            gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
+            label = "Motor IO";
+        };
+
+        status_led: status_led {
+            gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+            label = "Status LED";
+        };
+    };
+
+    buttons {
+        up_button: up_button {
+            gpios = <&gpio0 25 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+        };
+
+        down_button: down_button {
+            gpios = <&gpio0 26 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+        };
+
+        ok_button: ok_button {
+            gpios = <&gpio0 27 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+        };
+    };
+};

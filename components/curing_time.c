@@ -28,7 +28,7 @@ void ct_set_time(uint16_t new_time)
         program_time = new_time;
         k_mutex_unlock(&time_mutex);
     }
-    
+
 }
 
 void ct_increase_time()

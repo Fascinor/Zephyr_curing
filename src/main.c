@@ -117,15 +117,15 @@ void time_decrease_fn(void *arg1, void *arg2, void *arg3)
 void curing_thread_fn(void *arg1, void *arg2, void *arg3)
 {
     bool running = true;
-	uint16_t last_time;
+    uint16_t last_time;
     sm_set_state(curing);
 
     while(running) {
-		last_time = ct_get_time();
+        last_time = ct_get_time();
         if((last_time <= 0) || sm_get_state() != curing) {
             running = false;
         } else {
-        	k_sleep(K_SECONDS(60)); // 1min
+            k_sleep(K_SECONDS(60)); // 1min
             ct_set_time(last_time - 1);
         }
     }
@@ -175,7 +175,7 @@ int main(void)
 {
     /* Mutexes initialisation */
     sm_init();
-	ct_mutex_init();
+    ct_mutex_init();
 
     /* Display configuration */
     if (!device_is_ready(display)) {

@@ -1,16 +1,16 @@
 #include <zephyr/kernel.h>
 #include <zephyr/sys/atomic.h>
-#include <zephyr/drivers/gpio.h>
 #include <zephyr/sys/printk.h>
-#include <zephyr/drivers/i2c.h>
 
 /* Display includes */
+#include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/display/cfb.h>
 
 /* Buttons include */
 #include <zephyr/input/input.h>
 
+/* Private includes */
 #include "state_machine.h"
 #include "curing_time.h"
 

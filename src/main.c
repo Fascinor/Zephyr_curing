@@ -7,6 +7,13 @@
 #include <zephyr/drivers/display.h>
 #include <zephyr/display/cfb.h>
 
+/* Thread defines */
+#define STACK_SIZE 1024
+#define THREAD_PRIORITY 5
+K_THREAD_STACK_DEFINE(my_stack, STACK_SIZE);
+struct k_thread my_thread;
+
+/* ssd1306 */
 static const struct device *display =
     DEVICE_DT_GET(DT_ALIAS(display));
 
@@ -34,6 +41,18 @@ static const struct gpio_dt_spec ok_button =
 static struct gpio_callback up_button_cb;
 static struct gpio_callback down_button_cb;
 static struct gpio_callback ok_button_cb;
+
+/* State machine */
+typedef enum {
+    time_selection = 0,
+    curing
+} curing_state_t;
+
+static curing_state_t current_state = time_selection;
+
+/* Curing time */
+static uint16_t program_time = 60;
+struct k_mutex time_mutex;
 
 /*
  * up_button callback function
@@ -77,19 +96,46 @@ void ok_button_pressed(const struct device *dev,
 	gpio_pin_set_dt(&motor_out, 1);
 }
 
-void ssd_print(char *buffer, int posx, int posy)
+void ssd1306_thread(void *arg1, void *arg2, void *arg3)
 {
-	cfb_framebuffer_clear(display, true);
+	char time_string[16];
+	uint16_t last_time = 0;
+	uint16_t p_time_read;
+	uint16_t time_hour = 0;
+	uint8_t time_min = 0;
+	while(true) {
+		k_mutex_lock(&time_mutex, K_FOREVER);
+		p_time_read = program_time;
+		k_mutex_unlock(&time_mutex);
+		if (last_time != p_time_read) {
+			last_time = p_time_read;
+			time_min = last_time%60;
+			time_hour = (last_time - time_min)/60;
 
-	cfb_print(display, buffer, posx, posy + 8);
+			cfb_framebuffer_clear(display, true);
+			if(current_state == time_selection) {
+				cfb_print(display, "Select time", 0, 6);
+			} else {
+				cfb_print(display, "Curing", 0, 6);
+			}
+			if(last_time < 60) {
+					sprintf(time_string, "%dmin", last_time);
+			} else {
+				sprintf(time_string, "%dh%dmin", time_hour, time_min);
+			}
+			cfb_print(display, time_string, 32, 19);
+			cfb_framebuffer_finalize(display);
+		}
 
-	cfb_framebuffer_finalize(display);
+		k_sleep(K_MSEC(100));
+	}
 }
-
 
 int main(void)
 {
 	int ret;
+
+	k_mutex_init(&time_mutex);
 
 	/* Display configuration */
 
@@ -105,7 +151,9 @@ int main(void)
     	return 0;
 	}
 
-	ssd_print("hello there", 0, 0);
+	cfb_framebuffer_set_font(display, 0);
+
+	k_thread_create(&my_thread, my_stack, STACK_SIZE, ssd1306_thread, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
 
 	/* Outputs configuration */
 

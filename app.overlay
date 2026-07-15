@@ -1,15 +1,12 @@
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+
 / {
     aliases {
         spot-out = &spot_out;
         strap-out = &strap_out;
         motor-out = &motor_out;
 
-        up-button = &up_button;
-        down-button = &down_button;
-        ok-button = &ok_button;
-
         display = &ssd1306;
-
         status-led = &status_led;
     };
 
@@ -18,12 +15,12 @@
 
         spot_out: spot_out {
             gpios = <&gpio0 12 GPIO_ACTIVE_HIGH>;
-            label = "spot IO";
+            label = "Spot IO";
         };
 
         strap_out: strap_out {
             gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>;
-            label = "strap IO";
+            label = "Strap IO";
         };
 
         motor_out: motor_out {
@@ -37,18 +34,52 @@
         };
     };
 
-    buttons {
+    buttons: buttons {
+        compatible = "gpio-keys";
+
         up_button: up_button {
             gpios = <&gpio0 25 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            zephyr,code = <INPUT_KEY_UP>;
+            label = "Up";
         };
 
         down_button: down_button {
             gpios = <&gpio0 26 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            zephyr,code = <INPUT_KEY_DOWN>;
+            label = "Down";
         };
 
         ok_button: ok_button {
             gpios = <&gpio0 27 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+            zephyr,code = <INPUT_KEY_ENTER>;
+            label = "OK";
         };
+    };
+
+    longpress {
+        compatible = "zephyr,input-longpress";
+
+        input = <&buttons>;
+
+        input-codes = <
+            INPUT_KEY_UP
+            INPUT_KEY_DOWN
+            INPUT_KEY_ENTER
+        >;
+
+        short-codes = <
+            INPUT_KEY_F1
+            INPUT_KEY_F2
+            INPUT_KEY_F3
+        >;
+
+        long-codes = <
+            INPUT_KEY_F4
+            INPUT_KEY_F5
+            INPUT_KEY_F6
+        >;
+
+        long-delay-ms = <1000>;
     };
 };
 

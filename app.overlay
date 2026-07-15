@@ -4,7 +4,7 @@
     aliases {
         spot-out = &spot_out;
         strap-out = &strap_out;
-        motor-out = &motor_out;
+        motor-out = &motor_pwm;
 
         display = &ssd1306;
         status-led = &status_led;
@@ -23,14 +23,18 @@
             label = "Strap IO";
         };
 
-        motor_out: motor_out {
-            gpios = <&gpio0 14 GPIO_ACTIVE_HIGH>;
-            label = "Motor IO";
-        };
-
         status_led: status_led {
             gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
             label = "Status LED";
+        };
+    };
+
+    pwm_outputs {
+        compatible = "pwm-leds";
+
+        motor_pwm: motor_pwm {
+            pwms = <&mcpwm0 0 20000 PWM_POLARITY_NORMAL>;
+            label = "Motor PWM";
         };
     };
 
@@ -91,6 +95,13 @@
             bias-pull-up;
         };
     };
+
+    mcpwm0_default: mcpwm0_default {
+        group1 {
+            pinmux = <MCPWM0_OUT0A_GPIO14>;
+            output-enable;
+        };
+    };
 };
 
 &i2c0 {
@@ -119,4 +130,18 @@
         com-sequential;
         softreset-on;
     };
+};
+
+&mcpwm0 {
+    status = "okay";
+
+    pinctrl-0 = <&mcpwm0_default>;
+    pinctrl-names = "default";
+
+    /*
+     * Horloge MCPWM :
+     * période PWM_clk = 6.25ns * (prescale + 1)
+     */
+    prescale = <15>;
+    prescale-timer0 = <1>;
 };

@@ -69,14 +69,12 @@ static void set_state(curing_state_t new_state)
     gpio_pin_set_dt(&spot_out, 0);
     gpio_pin_set_dt(&strap_out, 0);
     gpio_pin_set_dt(&motor_out, 0);
-    printk("In time_selection state\n");
     break;
   case curing:
     /* Activate outputs */
     gpio_pin_set_dt(&spot_out, 1);
     gpio_pin_set_dt(&strap_out, 1);
     gpio_pin_set_dt(&motor_out, 1);
-    printk("In curing state\n");
     break;
   }
   k_mutex_lock(&state_mutex, K_FOREVER);
@@ -134,8 +132,6 @@ static void input_event_cb(struct input_event *evt, void *user_data)
     ARG_UNUSED(user_data);
 	static atomic_t increase_thread_status;
 	static atomic_t decrease_thread_status;
-
-    //printk("code=%u value=%d\n", evt->code, evt->value);
 
     switch (evt->code) {
 
@@ -266,51 +262,26 @@ void ssd1306_thread(void *arg1, void *arg2, void *arg3)
 
 int main(void)
 {
-	int ret;
-
+	/* Mutexes initialisation */
 	k_mutex_init(&time_mutex);
+	k_mutex_init(&state_mutex);
 
 	/* Display configuration */
-
     if (!device_is_ready(display)) {
     	printk("Display not ready\n");
     	return 0;
 	}
-
-	ret = cfb_framebuffer_init(display);
-
-	if (ret) {
-    	printk("CFB init failed (%d)\n", ret);
-    	return 0;
-	}
-
+	cfb_framebuffer_init(display);
 	cfb_framebuffer_set_font(display, 0);
-
 	k_thread_create(&my_thread, my_stack, STACK_SIZE, ssd1306_thread, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
 
 	/* Outputs configuration */
+	gpio_pin_configure_dt(&spot_out, GPIO_OUTPUT_INACTIVE);
+	gpio_pin_configure_dt(&strap_out, GPIO_OUTPUT_INACTIVE);
 
-	ret = gpio_pin_configure_dt(&spot_out, GPIO_OUTPUT_INACTIVE);
-	if (ret) {
-		printk("Erreur spot_out\n");
-		return 0;
-	}
+	gpio_pin_configure_dt(&motor_out, GPIO_OUTPUT_INACTIVE);
 
-	ret = gpio_pin_configure_dt(&strap_out, GPIO_OUTPUT_INACTIVE);
-	if (ret) { 
-		printk("Erreur strap_out\n");
-		return 0;
-	}
-
-	ret = gpio_pin_configure_dt(&motor_out, GPIO_OUTPUT_INACTIVE);
-	if (ret) {
-		printk("Erreur motor_out\n");
-		return 0;
-	}
-
-
-	/* Button configuration */
-
+	/* Button callback configuration */
     INPUT_CALLBACK_DEFINE(NULL, input_event_cb, NULL);
 
 	printk("System ready\n");

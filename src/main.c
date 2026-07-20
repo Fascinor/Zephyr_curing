@@ -40,6 +40,11 @@ static void curing_thread_fn(void *arg1, void *arg2, void *arg3);
 void time_increase_fn(void *arg1, void *arg2, void *arg3);
 void time_decrease_fn(void *arg1, void *arg2, void *arg3);
 
+/**
+ * @brief Callback for buttons events
+ * @param evt event calling the callback.
+ * @param user_data not used 
+ */
 static void input_event_cb(struct input_event *evt, void *user_data)
 {
     ARG_UNUSED(user_data);
@@ -92,6 +97,12 @@ static void input_event_cb(struct input_event *evt, void *user_data)
     }
 }
 
+/**
+ * @brief Thread-function that increases the time automatically
+ * @param arg1 not used
+ * @param arg2 not used 
+ * @param arg3 not used 
+ */
 void time_increase_fn(void *arg1, void *arg2, void *arg3)
 {
     atomic_t *increase_thread_status = (atomic_t *) arg1;
@@ -103,6 +114,12 @@ void time_increase_fn(void *arg1, void *arg2, void *arg3)
     }
 }
 
+/**
+ * @brief Thread-function that decreases the time automatically
+ * @param arg1 not used
+ * @param arg2 not used 
+ * @param arg3 not used 
+ */
 void time_decrease_fn(void *arg1, void *arg2, void *arg3)
 {
     atomic_t *decrease_thread_status = (atomic_t *) arg1;
@@ -114,6 +131,12 @@ void time_decrease_fn(void *arg1, void *arg2, void *arg3)
     }
 }
 
+/**
+ * @brief Thread-function that decreases the time every minute while in curing state
+ * @param arg1 not used
+ * @param arg2 not used 
+ * @param arg3 not used 
+ */
 void curing_thread_fn(void *arg1, void *arg2, void *arg3)
 {
     bool running = true;
@@ -136,6 +159,12 @@ void curing_thread_fn(void *arg1, void *arg2, void *arg3)
     sm_set_state(time_selection);
 }
 
+/**
+ * @brief Thread-function. Check every SCREEN_REFRESH_RATE_MS (50ms) to see if an info changed and refresh the screen if needed
+ * @param arg1 not used
+ * @param arg2 not used 
+ * @param arg3 not used 
+ */
 void ssd1306_thread(void *arg1, void *arg2, void *arg3)
 {
     char time_string[16];

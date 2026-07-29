@@ -19,16 +19,11 @@
 #define TIME_CONTINUOUS_INC_DEC_DELAY	100
 
 /* Thread defines */
-#define STACK_SIZE 1024
-#define THREAD_PRIORITY 5
-K_THREAD_STACK_DEFINE(my_stack, STACK_SIZE);
-struct k_thread my_thread;
+#include "thread_fn.h"
+K_THREAD_STACK_DEFINE(ssd1306_stack, STACK_SIZE);
 K_THREAD_STACK_DEFINE(curing_stack, STACK_SIZE);
-struct k_thread curing_thread;
 K_THREAD_STACK_DEFINE(time_increase_stack, STACK_SIZE);
-struct k_thread time_increase_thread;
 K_THREAD_STACK_DEFINE(time_decrease_stack, STACK_SIZE);
-struct k_thread time_decrease_thread;
 
 /* ssd1306 */
 static const struct device *display =
@@ -67,14 +62,14 @@ static void input_event_cb(struct input_event *evt, void *user_data)
 
     case INPUT_KEY_F3: // Enter short
         if((evt->value == 1) && sm_get_state() == time_selection) {
-            k_thread_create(&curing_thread, curing_stack, STACK_SIZE, curing_thread_fn, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+            k_thread_create(thread_get_curing(), curing_stack, STACK_SIZE, curing_thread_fn, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
         }
         break;
 
     case INPUT_KEY_F4: // Up long
         if((evt->value == 1) && sm_get_state() == time_selection) {
             atomic_set(&increase_thread_status, 1);
-            k_thread_create(&time_increase_thread, time_increase_stack, STACK_SIZE, time_increase_fn, &increase_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+            k_thread_create(thread_get_time_increase(), time_increase_stack, STACK_SIZE, time_increase_fn, &increase_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
         } else if((evt->value == 0) && sm_get_state() == time_selection) {
             atomic_set(&increase_thread_status, 0);
         }
@@ -83,7 +78,7 @@ static void input_event_cb(struct input_event *evt, void *user_data)
     case INPUT_KEY_F5: // Down long
         if((evt->value == 1) && sm_get_state() == time_selection) {
             atomic_set(&decrease_thread_status, 1);
-            k_thread_create(&time_decrease_thread, time_decrease_stack, STACK_SIZE, time_decrease_fn, &decrease_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+            k_thread_create(thread_get_time_decrease(), time_decrease_stack, STACK_SIZE, time_decrease_fn, &decrease_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
         } else if((evt->value == 0) && sm_get_state() == time_selection) {
             atomic_set(&decrease_thread_status, 0);
         }
@@ -213,7 +208,7 @@ int main(void)
     }
     cfb_framebuffer_init(display);
     cfb_framebuffer_set_font(display, 0);
-    k_thread_create(&my_thread, my_stack, STACK_SIZE, ssd1306_thread, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+    k_thread_create(thread_get_ssd1306(), ssd1306_stack, STACK_SIZE, ssd1306_thread, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
 
     /* Button callback configuration */
     INPUT_CALLBACK_DEFINE(NULL, input_event_cb, NULL);

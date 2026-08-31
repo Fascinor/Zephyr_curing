@@ -13,6 +13,7 @@
 /* Private includes */
 #include "state_machine.h"
 #include "curing_time.h"
+#include "motor.h"
 
 /* Buttons define */
 #define SCREEN_REFRESH_RATE_MS			50
@@ -32,8 +33,8 @@ static const struct device *display =
 /* Thread functions declarations */
 static void ssd1306_thread(void *arg1, void *arg2, void *arg3);
 static void curing_thread_fn(void *arg1, void *arg2, void *arg3);
-void time_increase_fn(void *arg1, void *arg2, void *arg3);
-void time_decrease_fn(void *arg1, void *arg2, void *arg3);
+void value_increase_fn(void *arg1, void *arg2, void *arg3);
+void value_decrease_fn(void *arg1, void *arg2, void *arg3);
 
 /**
  * @brief Callback for buttons events
@@ -49,43 +50,55 @@ static void input_event_cb(struct input_event *evt, void *user_data)
     switch (evt->code) {
 
     case INPUT_KEY_F1: // Up short
-        if ((evt->value == 1) && sm_get_state() == time_selection) {
-            ct_increase_time();
+        if (evt->value == 1) {
+            if(sm_get_state() == time_selection) {
+                ct_increase_time();
+            } else if(sm_get_state() == motor_pwr_selection) {
+                motor_increase_pwr();
+            }
         }
         break;
 
     case INPUT_KEY_F2: // Down short
-        if((evt->value == 1) && sm_get_state() == time_selection) {
-            ct_decrease_time();
+        if(evt->value == 1) {
+            if(sm_get_state() == time_selection) {
+                ct_decrease_time();
+            } else if(sm_get_state() == motor_pwr_selection) {
+                motor_decrease_pwr();
+            }
         }
         break;
 
     case INPUT_KEY_F3: // Enter short
-        if((evt->value == 1) && sm_get_state() == time_selection) {
-            k_thread_create(thread_get_curing(), curing_stack, STACK_SIZE, curing_thread_fn, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+        if(evt->value == 1) {
+            if(sm_get_state() == time_selection) {
+                sm_set_state(motor_pwr_selection);
+            } else if(sm_get_state() == motor_pwr_selection) {
+                k_thread_create(thread_get_curing(), curing_stack, STACK_SIZE, curing_thread_fn, NULL, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+            }
         }
         break;
 
     case INPUT_KEY_F4: // Up long
-        if((evt->value == 1) && sm_get_state() == time_selection) {
+        if((evt->value == 1) && ((sm_get_state() == time_selection) || (sm_get_state() == motor_pwr_selection))) {
             atomic_set(&increase_thread_status, 1);
-            k_thread_create(thread_get_time_increase(), time_increase_stack, STACK_SIZE, time_increase_fn, &increase_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
-        } else if((evt->value == 0) && sm_get_state() == time_selection) {
+            k_thread_create(thread_get_time_increase(), time_increase_stack, STACK_SIZE, value_increase_fn, &increase_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+        } else if((evt->value == 0) && ((sm_get_state() == time_selection) || (sm_get_state() == motor_pwr_selection))) {
             atomic_set(&increase_thread_status, 0);
         }
         break;
 
     case INPUT_KEY_F5: // Down long
-        if((evt->value == 1) && sm_get_state() == time_selection) {
+        if((evt->value == 1) && ((sm_get_state() == time_selection) || (sm_get_state() == motor_pwr_selection))) {
             atomic_set(&decrease_thread_status, 1);
-            k_thread_create(thread_get_time_decrease(), time_decrease_stack, STACK_SIZE, time_decrease_fn, &decrease_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
-        } else if((evt->value == 0) && sm_get_state() == time_selection) {
+            k_thread_create(thread_get_time_decrease(), time_decrease_stack, STACK_SIZE, value_decrease_fn, &decrease_thread_status, NULL, NULL, THREAD_PRIORITY, 0, K_NO_WAIT);
+        } else if((evt->value == 0) && ((sm_get_state() == time_selection) || (sm_get_state() == motor_pwr_selection))) {
             atomic_set(&decrease_thread_status, 0);
         }
         break;
 
     case INPUT_KEY_F6: // Enter long
-        if((evt->value == 1) && sm_get_state() == curing) {
+        if((evt->value == 1) && ((sm_get_state() == motor_pwr_selection) || (sm_get_state() == curing))) {
             sm_set_state(time_selection);
         }
         break;
@@ -98,12 +111,21 @@ static void input_event_cb(struct input_event *evt, void *user_data)
  * @param arg2 not used 
  * @param arg3 not used 
  */
-void time_increase_fn(void *arg1, void *arg2, void *arg3)
+void value_increase_fn(void *arg1, void *arg2, void *arg3)
 {
     atomic_t *increase_thread_status = (atomic_t *) arg1;
     while(atomic_get(increase_thread_status)) {
-        if(ct_get_time() < CURING_TIME_MAX_VALUE) {
-            ct_increase_time();
+        switch(sm_get_state()) {
+            case time_selection:
+                if(ct_get_time() < CURING_TIME_MAX_VALUE) {
+                    ct_increase_time();
+                }
+            break;
+            case motor_pwr_selection:
+                motor_increase_pwr();
+            break;
+            default:
+            break;
         }
         k_sleep(K_MSEC(TIME_CONTINUOUS_INC_DEC_DELAY));
     }
@@ -115,12 +137,21 @@ void time_increase_fn(void *arg1, void *arg2, void *arg3)
  * @param arg2 not used 
  * @param arg3 not used 
  */
-void time_decrease_fn(void *arg1, void *arg2, void *arg3)
+void value_decrease_fn(void *arg1, void *arg2, void *arg3)
 {
     atomic_t *decrease_thread_status = (atomic_t *) arg1;
     while(atomic_get(decrease_thread_status)) {
-        if(ct_get_time() > 0) {
-            ct_decrease_time();
+        switch(sm_get_state()) {
+            case time_selection:
+                if(ct_get_time() < CURING_TIME_MAX_VALUE) {
+                    ct_decrease_time();
+                }
+            break;
+            case motor_pwr_selection:
+                motor_decrease_pwr();
+            break;
+            default:
+            break;
         }
         k_sleep(K_MSEC(TIME_CONTINUOUS_INC_DEC_DELAY));
     }
@@ -162,35 +193,46 @@ void curing_thread_fn(void *arg1, void *arg2, void *arg3)
  */
 void ssd1306_thread(void *arg1, void *arg2, void *arg3)
 {
-    char time_string[16];
+    char value_string[16];
     curing_state_t last_state = time_selection;
     uint16_t last_time = 0;
-    uint16_t p_time_read;
+    uint8_t last_motor_pwr = 0;
     uint16_t time_hour = 0;
     uint8_t time_min = 0;
     while(true) {
-        p_time_read = ct_get_time();
-        if ((last_time != p_time_read) || last_state != sm_get_state()) {
+        if ((last_time != ct_get_time()) || (last_motor_pwr != motor_get_pwr()) || (last_state != sm_get_state())) {
             last_state = sm_get_state();
-            last_time = p_time_read;
+            last_time = ct_get_time();
+            last_motor_pwr = motor_get_pwr();
             time_min = last_time%60;
             time_hour = (last_time - time_min)/60;
 
             cfb_framebuffer_clear(display, true);
-            if(sm_get_state() == time_selection) {
-                cfb_print(display, "Select time", 0, 6);
-            } else {
-                cfb_print(display, "Curing", 0, 6);
+            switch(last_state) {
+                case time_selection:
+                    cfb_print(display, "Time :", 0, 6);
+                    if(last_time < 60) {
+                        sprintf(value_string, "%dmin", last_time);
+                    } else {
+                        sprintf(value_string, "%dh%dmin", time_hour, time_min);
+                    }
+                break;
+                case motor_pwr_selection:
+                    cfb_print(display, "Motor PWR :", 0, 6);
+                    sprintf(value_string, "%d%%", last_motor_pwr);
+                break;
+                case curing :
+                    cfb_print(display, "Curing", 0, 6);
+                    if(last_time < 60) {
+                        sprintf(value_string, "%dmin", last_time);
+                    } else {
+                        sprintf(value_string, "%dh%dmin", time_hour, time_min);
+                    }
+                break;
             }
-            if(last_time < 60) {
-                sprintf(time_string, "%dmin", last_time);
-            } else {
-                sprintf(time_string, "%dh%dmin", time_hour, time_min);
-            }
-            cfb_print(display, time_string, 32, 19);
+            cfb_print(display, value_string, 32, 19);
             cfb_framebuffer_finalize(display);
         }
-
         k_sleep(K_MSEC(SCREEN_REFRESH_RATE_MS));
     }
 }

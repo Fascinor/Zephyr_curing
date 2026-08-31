@@ -39,7 +39,7 @@ void value_decrease_fn(void *arg1, void *arg2, void *arg3);
 /**
  * @brief Callback for buttons events
  * @param evt event calling the callback.
- * @param user_data not used 
+ * @param user_data not used
  */
 static void input_event_cb(struct input_event *evt, void *user_data)
 {
@@ -108,23 +108,23 @@ static void input_event_cb(struct input_event *evt, void *user_data)
 /**
  * @brief Thread-function that increases the time automatically
  * @param arg1 not used
- * @param arg2 not used 
- * @param arg3 not used 
+ * @param arg2 not used
+ * @param arg3 not used
  */
 void value_increase_fn(void *arg1, void *arg2, void *arg3)
 {
     atomic_t *increase_thread_status = (atomic_t *) arg1;
     while(atomic_get(increase_thread_status)) {
         switch(sm_get_state()) {
-            case time_selection:
-                if(ct_get_time() < CURING_TIME_MAX_VALUE) {
-                    ct_increase_time();
-                }
+        case time_selection:
+            if(ct_get_time() < CURING_TIME_MAX_VALUE) {
+                ct_increase_time();
+            }
             break;
-            case motor_pwr_selection:
-                motor_increase_pwr();
+        case motor_pwr_selection:
+            motor_increase_pwr();
             break;
-            default:
+        default:
             break;
         }
         k_sleep(K_MSEC(TIME_CONTINUOUS_INC_DEC_DELAY));
@@ -134,23 +134,23 @@ void value_increase_fn(void *arg1, void *arg2, void *arg3)
 /**
  * @brief Thread-function that decreases the time automatically
  * @param arg1 not used
- * @param arg2 not used 
- * @param arg3 not used 
+ * @param arg2 not used
+ * @param arg3 not used
  */
 void value_decrease_fn(void *arg1, void *arg2, void *arg3)
 {
     atomic_t *decrease_thread_status = (atomic_t *) arg1;
     while(atomic_get(decrease_thread_status)) {
         switch(sm_get_state()) {
-            case time_selection:
-                if(ct_get_time() < CURING_TIME_MAX_VALUE) {
-                    ct_decrease_time();
-                }
+        case time_selection:
+            if(ct_get_time() < CURING_TIME_MAX_VALUE) {
+                ct_decrease_time();
+            }
             break;
-            case motor_pwr_selection:
-                motor_decrease_pwr();
+        case motor_pwr_selection:
+            motor_decrease_pwr();
             break;
-            default:
+        default:
             break;
         }
         k_sleep(K_MSEC(TIME_CONTINUOUS_INC_DEC_DELAY));
@@ -160,8 +160,8 @@ void value_decrease_fn(void *arg1, void *arg2, void *arg3)
 /**
  * @brief Thread-function that decreases the time every minute while in curing state
  * @param arg1 not used
- * @param arg2 not used 
- * @param arg3 not used 
+ * @param arg2 not used
+ * @param arg3 not used
  */
 void curing_thread_fn(void *arg1, void *arg2, void *arg3)
 {
@@ -188,8 +188,8 @@ void curing_thread_fn(void *arg1, void *arg2, void *arg3)
 /**
  * @brief Thread-function. Check every SCREEN_REFRESH_RATE_MS (50ms) to see if an info changed and refresh the screen if needed
  * @param arg1 not used
- * @param arg2 not used 
- * @param arg3 not used 
+ * @param arg2 not used
+ * @param arg3 not used
  */
 void ssd1306_thread(void *arg1, void *arg2, void *arg3)
 {
@@ -209,25 +209,25 @@ void ssd1306_thread(void *arg1, void *arg2, void *arg3)
 
             cfb_framebuffer_clear(display, true);
             switch(last_state) {
-                case time_selection:
-                    cfb_print(display, "Time :", 0, 6);
-                    if(last_time < 60) {
-                        sprintf(value_string, "%dmin", last_time);
-                    } else {
-                        sprintf(value_string, "%dh%dmin", time_hour, time_min);
-                    }
+            case time_selection:
+                cfb_print(display, "Time :", 0, 6);
+                if(last_time < 60) {
+                    sprintf(value_string, "%dmin", last_time);
+                } else {
+                    sprintf(value_string, "%dh%dmin", time_hour, time_min);
+                }
                 break;
-                case motor_pwr_selection:
-                    cfb_print(display, "Motor PWR :", 0, 6);
-                    sprintf(value_string, "%d%%", last_motor_pwr);
+            case motor_pwr_selection:
+                cfb_print(display, "Motor PWR :", 0, 6);
+                sprintf(value_string, "%d%%", last_motor_pwr);
                 break;
-                case curing :
-                    cfb_print(display, "Curing", 0, 6);
-                    if(last_time < 60) {
-                        sprintf(value_string, "%dmin", last_time);
-                    } else {
-                        sprintf(value_string, "%dh%dmin", time_hour, time_min);
-                    }
+            case curing :
+                cfb_print(display, "Curing", 0, 6);
+                if(last_time < 60) {
+                    sprintf(value_string, "%dmin", last_time);
+                } else {
+                    sprintf(value_string, "%dh%dmin", time_hour, time_min);
+                }
                 break;
             }
             cfb_print(display, value_string, 32, 19);

@@ -6,6 +6,8 @@ find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(curing_station)
 
 target_sources(app PRIVATE src/main.c)
+target_sources(app PRIVATE components/thread_fn.c)
+target_sources(app PRIVATE components/motor.c)
 target_sources(app PRIVATE components/state_machine.c)
 target_sources(app PRIVATE components/curing_time.c)
 

@@ -4,6 +4,7 @@
 /* State machine */
 typedef enum {
     time_selection = 0,
+    motor_pwr_selection,
     curing
 } curing_state_t;
 

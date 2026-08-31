@@ -10,7 +10,7 @@ The program was made using Zephyr version 4.4 and could be able to run on other 
 ## Hardware
 Below is a list hardware components.
 
- * Custom esp-wroom-32D based board (see KiCad project and use an esp32 eval board to follow electrical schematic).
+ * Custom esp-wroom-32D based board (see KiCad project and use an esp32 eval board to follow electrical schematic). Note that the pictures are about Rev A wich is the same with a few errors corrected such as the imprint of the SSR relay inverted, a few GPIO changes for the buttons, and the resistor R3 short-circuited to GND (between the MOSFET).
  * SSD1306, 0.96 inch
  * Capacitors (100nF for motor [not more, it can mess with PWM !] and 10uF as a power bank near the esp32)
  * Resistors (120/10k Ohms)
